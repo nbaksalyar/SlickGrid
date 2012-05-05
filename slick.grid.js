@@ -91,6 +91,7 @@ if (typeof Slick === "undefined") {
       name: "",
       resizable: true,
       sortable: false,
+      reorderable: true,
       minWidth: 30,
       rerenderOnResize: false,
       headerCssClass: null
@@ -467,6 +468,10 @@ if (typeof Slick === "undefined") {
           header.append("<span class='slick-sort-indicator' />");
         }
 
+        if (!m.reorderable) {
+          header.addClass('slick-header-column-no-reorder');
+        }
+
         if (options.showHeaderRow) {
           $("<div class='ui-state-default slick-headerrow-column l" + i + " r" + i + "'></div>")
               .appendTo($headerRow);
@@ -560,6 +565,7 @@ if (typeof Slick === "undefined") {
         tolerance: "intersection",
         helper: "clone",
         placeholder: "slick-sortable-placeholder ui-state-default slick-header-column",
+        cancel: ".slick-header-column-no-reorder",
         forcePlaceholderSize: true,
         start: function (e, ui) {
           $(ui.helper).addClass("slick-header-column-active");
