@@ -377,18 +377,18 @@ if (typeof Slick === "undefined") {
     }
 
     function getMaxSupportedCssHeight() {
-      var increment = 1000000;
-      var supportedHeight = increment;
+      var supportedHeight = 1000000;
       // FF reports the height back but still renders blank after ~6M px
-      var testUpTo = ($.browser.mozilla) ? 5000000 : 1000000000;
+      var testUpTo = ($.browser.mozilla) ? 6000000 : 1000000000;
       var div = $("<div style='display:none' />").appendTo(document.body);
 
-      while (supportedHeight <= testUpTo) {
-        div.css("height", supportedHeight + increment);
-        if (div.height() !== supportedHeight + increment) {
+      while (true) {
+        var test = supportedHeight * 2;
+        div.css("height", test);
+        if (test > testUpTo || div.height() !== test) {
           break;
         } else {
-          supportedHeight += increment;
+          supportedHeight = test;
         }
       }
 
@@ -1155,6 +1155,9 @@ if (typeof Slick === "undefined") {
     // Rendering / Scrolling
 
     function scrollTo(y) {
+      y = Math.max(y, 0);
+      y = Math.min(y, th - viewportH);
+
       var oldOffset = offset;
 
       page = Math.min(n - 1, Math.floor(y / ph));
@@ -1390,6 +1393,7 @@ if (typeof Slick === "undefined") {
       }
 
       updateRowCount();
+      handleScroll();
       render();
     }
 
@@ -1839,7 +1843,11 @@ if (typeof Slick === "undefined") {
 
     function handleClick(e) {
       if (!currentEditor) {
-        setFocus();
+        // if this click resulted in some cell child node getting focus,
+        // don't steal it back - keyboard events will still bubble up
+        if (e.target != document.activeElement) {
+          setFocus();
+        }
       }
 
       var cell = getCellFromEvent(e);
@@ -1852,7 +1860,7 @@ if (typeof Slick === "undefined") {
         return;
       }
 
-      if (canCellBeActive(cell.row, cell.cell)) {
+      if ((activeCell != cell.cell || activeRow != cell.row) && canCellBeActive(cell.row, cell.cell)) {
         if (!getEditorLock().isActive() || getEditorLock().commitCurrentEdit()) {
           scrollRowIntoView(cell.row, false);
           setActiveCellInternal(getCellNode(cell.row, cell.cell), (cell.row === getDataLength()) || options.autoEdit);
@@ -1958,10 +1966,17 @@ if (typeof Slick === "undefined") {
         return null;
       }
 
-      return {
-        row:  getRowFromNode($cell[0].parentNode),
-        cell: getCellFromNode($cell[0])
-      };
+      var row = getRowFromNode($cell[0].parentNode);
+      var cell = getCellFromNode($cell[0]);
+
+      if (row == null || cell == null) {
+        return null;
+      } else {
+        return {
+          "row": row,
+          "cell": cell
+        };
+      }
     }
 
     function getCellNodeBox(row, cell) {
@@ -2036,8 +2051,6 @@ if (typeof Slick === "undefined") {
           } else {
             makeActiveCellEditable();
           }
-        } else {
-          setFocus();
         }
       } else {
         activeRow = activeCell = null;
@@ -2277,6 +2290,11 @@ if (typeof Slick === "undefined") {
         scrollTo(doPaging ? rowAtBottom : rowAtTop);
         render();
       }
+    }
+
+    function scrollRowToTop(row) {
+      scrollTo(row * options.rowHeight);
+      render();
     }
 
     function getColspan(row, cell) {
@@ -2799,6 +2817,7 @@ if (typeof Slick === "undefined") {
       "resizeCanvas": resizeCanvas,
       "updateRowCount": updateRowCount,
       "scrollRowIntoView": scrollRowIntoView,
+      "scrollRowToTop": scrollRowToTop,
       "getCanvasNode": getCanvasNode,
       "focus": setFocus,
 
